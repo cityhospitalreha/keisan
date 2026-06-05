@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>計算訓練アプリ</title>
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --border: #e0ddd6;
+    --border-strong: #c8c5bc;
+    --text: #1a1917;
+    --text-sub: #6b6860;
+    --text-hint: #9c9a94;
+    --accent: #185fa5;
+    --accent-bg: #e6f1fb;
+    --success: #3b6d11;
+    --success-bg: #eaf3de;
+    --danger: #a32d2d;
+    --danger-bg: #fcebeb;
+    --warning: #854f0b;
+    --warning-bg: #faeeda;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ===== HEADER ===== */
+  .app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .app-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .app-header .subtitle {
+    font-size: 13px;
+    color: var(--text-sub);
+  }
+
+  /* ===== SETTINGS SCREEN ===== */
+  .settings-scroll {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px 16px 100px;
+  }
+
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title .num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Genre checkboxes */
+  .genre-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .genre-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .genre-item:active { transform: scale(0.98); }
+
+  .genre-item.checked {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+  }
+
+  .genre-item input[type=checkbox] { display: none; }
+
+  .checkbox-box {
+    width: 22px; height: 22px;
+    border: 2px solid var(--border-strong);
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+
+  .genre-item.checked .checkbox-box {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .checkbox-box svg { display: none; }
+  .genre-item.checked .checkbox-box svg { display: block; }
+
+  .genre-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .genre-item.v2-only { opacity: 0.45; cursor: not-allowed; }
+  .genre-item.v2-only .genre-label::after {
+    content: ' (v2)';
+    font-size: 11px;
+    color: var(--text-hint);
+    font-weight: 400;
+  }
+
+  /* Level selector */
+  .level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+  }
+
+  .level-btn {
+    padding: 12px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .level-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+  }
+
+  .level-btn .lv-num {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .level-btn .lv-desc {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-top: 2px;
+  }
+
+  .level-note { font-size: 12px; color: var(--text-sub); margin-top: 8px; line-height: 1.5; }
+
+  /* Count selector */
+  .count-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .count-btn {
+    padding: 14px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    cursor: pointer;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .count-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+  }
+
+  .custom-count-row {
+    margin-top: 10px;
+    display: none;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .custom-count-row.visible { display: flex; }
+
+  .custom-count-row input {
+    width: 80px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+  }
+
+  .custom-count-row input:focus { border-color: var(--accent); }
+  .custom-count-row label { font-size: 14px; color: var(--text-sub); }
+
+  /* Timer toggle */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 52px; height: 30px;
+    cursor: pointer;
+  }
+
+  .toggle-switch input { display: none; }
+
+  .toggle-track {
+    width: 52px; height: 30px;
+    border-radius: 15px;
+    background: var(--border-strong);
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+  }
+
+  .toggle-switch input:checked + .toggle-track { background: var(--accent); }
+
+  .toggle-thumb {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: white;
+    margin-left: 3px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+
+  .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(22px); }
+  .toggle-label { font-size: 15px; color: var(--text); }
+
+  /* Compound settings */
+  .compound-settings { display: none; }
+  .compound-settings.visible { display: block; }
+
+  .sub-section {
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    margin-top: 14px;
+  }
+
+  .sub-title { font-size: 13px; font-weight: 600; color: var(--text-sub); margin-bottom: 10px; }
+
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .check-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+
+  .check-row input[type=checkbox] { display: none; }
+
+  .check-box {
+    width: 24px; height: 24px;
+    border: 2px solid var(--border-strong);
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+
+  .check-row.checked .check-box {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .check-row .check-label { font-size: 14px; color: var(--text); }
+  .check-row .check-example { font-size: 13px; color: var(--text-sub); margin-left: auto; font-family: monospace; }
+
+  /* Start button */
+  .start-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 16px;
+  }
+
+  .start-btn {
+    display: block;
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 18px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: opacity 0.15s;
+  }
+
+  .start-btn:active { opacity: 0.85; }
+  .start-btn:disabled { background: var(--border-strong); cursor: not-allowed; }
+
+  /* ===== PROBLEM SCREEN ===== */
+  #screen-problem {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+  }
+
+  #screen-problem.active { display: flex; }
+
+  .prob-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .prob-progress-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-sub);
+  }
+
+  .prob-progress-text span {
+    color: var(--text);
+    font-size: 20px;
+  }
+
+  .prob-quit-btn {
+    font-size: 14px;
+    color: var(--text-sub);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .prob-quit-btn:active { background: var(--bg); }
+
+  .prob-timer {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+  }
+
+  .prob-progress-bar {
+    height: 4px;
+    background: var(--border);
+  }
+
+  .prob-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.3s ease;
+  }
+
+  .prob-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 20px;
+    gap: 20px;
+    overflow: hidden;
+  }
+
+  .prob-question {
+    font-size: 56px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    letter-spacing: -1px;
+    line-height: 1.2;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .prob-answer-area {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .prob-input {
+    width: 100%;
+    padding: 16px 20px;
+    font-size: 40px;
+    font-weight: 700;
+    text-align: center;
+    border: 2.5px solid var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+    font-family: monospace;
+    letter-spacing: 2px;
+  }
+
+  .prob-input:focus { border-color: var(--accent); }
+
+  .prob-next-btn {
+    width: 100%;
+    padding: 20px;
+    font-size: 22px;
+    font-weight: 700;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: opacity 0.15s, background 0.15s;
+    letter-spacing: 1px;
+    touch-action: manipulation;
+  }
+
+  .prob-next-btn:active { opacity: 0.85; }
+  .prob-next-btn.next-mode { background: #2a7a2a; }
+
+  .prob-feedback {
+    min-height: 36px;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    padding: 6px 16px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+  }
+
+  .prob-feedback.correct {
+    color: #1a5c00;
+    background: #d4f5b0;
+    font-size: 26px;
+  }
+  .prob-feedback.wrong {
+    color: var(--danger);
+    background: var(--danger-bg);
+  }
+
+  /* Number pad */
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .numpad-btn {
+    padding: 22px 10px;
+    font-size: 28px;
+    font-weight: 700;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.1s;
+    user-select: none;
+    touch-action: manipulation;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  }
+
+  .numpad-btn:active { background: #c8e0f8; border-color: var(--accent); }
+  .numpad-btn.del {
+    color: var(--danger);
+    font-size: 22px;
+    background: #fff5f5;
+    border-color: #f0c0c0;
+  }
+  .numpad-btn.del:active { background: #fcd8d8; }
+
+  /* ===== RESULT SCREEN ===== */
+  #screen-result {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+    display: none;
+  }
+
+  #screen-result.active { display: block; }
+
+  .result-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .result-score {
+    font-size: 64px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .result-label {
+    font-size: 16px;
+    color: var(--text-sub);
+    margin-bottom: 20px;
+  }
+
+  .result-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .result-stat {
+    text-align: center;
+  }
+
+  .result-stat-val {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .result-stat-lbl {
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-top: 2px;
+  }
+
+  .mistakes-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .mistakes-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .mistake-row {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mistake-row:last-child { border-bottom: none; }
+
+  .mistake-q {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    font-family: monospace;
+    flex: 1;
+  }
+
+  .mistake-user {
+    font-size: 16px;
+    color: var(--danger);
+    font-family: monospace;
+    font-weight: 600;
+  }
+
+  .mistake-correct {
+    font-size: 14px;
+    color: var(--success);
+    font-family: monospace;
+  }
+
+  .result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-retry {
+    display: block;
+    padding: 18px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: opacity 0.15s;
+  }
+
+  .btn-retry:active { opacity: 0.85; }
+
+  .btn-back {
+    display: block;
+    padding: 16px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius);
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s;
+  }
+
+  .btn-back:active { background: var(--bg); }
+
+  /* History */
+  .history-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .history-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-sub);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .history-clear {
+    font-size: 12px;
+    color: var(--danger);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 2px 6px;
+  }
+
+  .history-item {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 8px 12px;
+    align-items: center;
+  }
+
+  .history-item:last-child { border-bottom: none; }
+
+  .history-date { font-size: 13px; color: var(--text-hint); grid-row: span 2; align-self: center; }
+  .history-genre { font-size: 13px; color: var(--text-sub); }
+  .history-detail { font-size: 12px; color: var(--text-hint); }
+  .history-rate {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    grid-row: span 2;
+    align-self: center;
+    text-align: right;
+  }
+
+  .no-history { padding: 20px; text-align: center; font-size: 14px; color: var(--text-hint); }
+</style>
+</head>
+<body>
+
+<!-- SETTINGS SCREEN -->
+<div id="screen-settings" class="screen active">
+  <div class="app-header">
+    <div>
+      <h1>計算訓練</h1>
+      <div class="subtitle">計算・注意・処理速度・ワーキングメモリ訓練</div>
+    </div>
+  </div>
+
+  <div class="settings-scroll">
+
+    <!-- 1. ジャンル -->
+    <div class="section-card">
+      <div class="section-title">
+        <span class="num">1</span>
+        出題ジャンル（複数選択可）
+      </div>
+      <div class="genre-grid" id="genre-grid">
+        <label class="genre-item checked" data-genre="add">
+          <input type="checkbox" checked>
+          <div class="checkbox-box">
+            <svg width="14" height="11" viewBox="0 0 14 11"><polyline points="1,5 5,9 13,1" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="genre-label">足し算</span>
+        </label>
+        <label class="genre-item checked" data-genre="sub">
+          <input type="checkbox" checked>
+          <div class="checkbox-box">
+            <svg width="14" height="11" viewBox="0 0 14 11"><polyline points="1,5 5,9 13,1" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="genre-label">引き算</span>
+        </label>
+        <label class="genre-item" data-genre="mul">
+          <input type="checkbox">
+          <div class="checkbox-box">
+            <svg width="14" height="11" viewBox="0 0 14 11"><polyline points="1,5 5,9 13,1" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="genre-label">掛け算</span>
+        </label>
+        <label class="genre-item" data-genre="div">
+          <input type="checkbox">
+          <div class="checkbox-box">
+            <svg width="14" height="11" viewBox="0 0 14 11"><polyline points="1,5 5,9 13,1" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="genre-label">割り算</span>
+        </label>
+        <label class="genre-item" data-genre="compound">
+          <input type="checkbox">
+          <div class="checkbox-box">
+            <svg width="14" height="11" viewBox="0 0 14 11"><polyline points="1,5 5,9 13,1" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="genre-label">複合計算</span>
+        </label>
+        <label class="genre-item" data-genre="blank">
+          <input type="checkbox">
+          <div class="checkbox-box">
+            <svg width="14" height="11" viewBox="0 0 14 11"><polyline points="1,5 5,9 13,1" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="genre-label">虫食い計算</span>
+        </label>
+        <label class="genre-item v2-only">
+          <input type="checkbox" disabled>
+          <div class="checkbox-box"></div>
+          <span class="genre-label">筆算</span>
+        </label>
+        <label class="genre-item v2-only">
+          <input type="checkbox" disabled>
+          <div class="checkbox-box"></div>
+          <span class="genre-label">筆算虫食い</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 2. レベル -->
+    <div class="section-card">
+      <div class="section-title">
+        <span class="num">2</span>
+        数字レベル
+      </div>
+      <div class="level-grid">
+        <button class="level-btn" data-level="1" onclick="toggleLevel(1)">
+          <div class="lv-num">レベル1</div>
+          <div class="lv-desc">1桁同士</div>
+        </button>
+        <button class="level-btn" data-level="2" onclick="toggleLevel(2)">
+          <div class="lv-num">レベル2</div>
+          <div class="lv-desc">1桁×2桁</div>
+        </button>
+        <button class="level-btn active" data-level="3" onclick="toggleLevel(3)">
+          <div class="lv-num">レベル3</div>
+          <div class="lv-desc">2桁同士</div>
+        </button>
+        <button class="level-btn" data-level="4" onclick="toggleLevel(4)">
+          <div class="lv-num">レベル4</div>
+          <div class="lv-desc">3桁あり</div>
+        </button>
+        <button class="level-btn" data-level="rand" onclick="toggleLevel('rand')">
+          <div class="lv-num">ランダム</div>
+          <div class="lv-desc">混在</div>
+        </button>
+      </div>
+      <div class="level-note" id="level-note">
+        選択レベル内でランダムに混在出題できます（ランダムを選択時）
+      </div>
+    </div>
+
+    <!-- 3. 問題数 -->
+    <div class="section-card">
+      <div class="section-title">
+        <span class="num">3</span>
+        問題数
+      </div>
+      <div class="count-grid">
+        <button class="count-btn active" data-count="10" onclick="setCount(10)">10</button>
+        <button class="count-btn" data-count="20" onclick="setCount(20)">20</button>
+        <button class="count-btn" data-count="30" onclick="setCount(30)">30</button>
+        <button class="count-btn" data-count="50" onclick="setCount(50)">50</button>
+        <button class="count-btn" data-count="custom" onclick="setCount('custom')">カスタム</button>
+      </div>
+      <div class="custom-count-row" id="custom-count-row">
+        <input type="number" id="custom-count-val" value="15" min="1" max="200">
+        <label>問（1〜200）</label>
+      </div>
+    </div>
+
+    <!-- 4. タイマー -->
+    <div class="section-card">
+      <div class="section-title">
+        <span class="num">4</span>
+        タイマー
+      </div>
+      <div class="toggle-row">
+        <label class="toggle-switch">
+          <input type="checkbox" id="timer-toggle" checked>
+          <div class="toggle-track"><div class="toggle-thumb"></div></div>
+        </label>
+        <span class="toggle-label" id="timer-label">経過時間を表示する</span>
+      </div>
+    </div>
+
+    <!-- 5. 複合計算設定 -->
+    <div class="section-card">
+      <div class="section-title">
+        <span class="num">5</span>
+        複合計算の設定
+      </div>
+
+      <div id="compound-hint" style="font-size:13px; color:var(--text-sub);">
+        ジャンルで「複合計算」を選択すると設定できます
+      </div>
+
+      <div class="compound-settings" id="compound-settings">
+        <div class="sub-title">ステップ数</div>
+        <label class="check-row checked" id="check-step2">
+          <input type="checkbox" checked>
+          <div class="check-box">
+            <svg width="14" height="11" viewBox="0 0 14 11"><polyline points="1,5 5,9 13,1" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="check-label">2重計算</span>
+          <span class="check-example">2×5+2</span>
+        </label>
+        <label class="check-row" id="check-step3">
+          <input type="checkbox">
+          <div class="check-box">
+            <svg width="14" height="11" viewBox="0 0 14 11"><polyline points="1,5 5,9 13,1" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="check-label">3重計算</span>
+          <span class="check-example">2×5+2−3</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 履歴 -->
+    <div class="history-section">
+      <div class="history-header">
+        <span>最近の記録</span>
+        <button class="history-clear" onclick="clearHistory()">クリア</button>
+      </div>
+      <div id="history-list"></div>
+    </div>
+
+  </div>
+
+  <div class="start-bar">
+    <button class="start-btn" id="start-btn" onclick="startQuiz()">スタート</button>
+  </div>
+</div>
+
+<!-- PROBLEM SCREEN -->
+<div id="screen-problem" class="screen">
+  <div class="prob-header">
+    <div class="prob-progress-text"><span id="prob-current">1</span> / <span id="prob-total">10</span> 問</div>
+    <div class="prob-timer" id="prob-timer" style="display:none">00:00</div>
+    <button class="prob-quit-btn" onclick="quitQuiz()">← 設定に戻る</button>
+  </div>
+  <div class="prob-progress-bar">
+    <div class="prob-progress-fill" id="prob-fill" style="width:0%"></div>
+  </div>
+
+  <div class="prob-body">
+    <div class="prob-question" id="prob-question">7 + 8 = □</div>
+
+    <div class="prob-answer-area">
+      <input type="text" class="prob-input" id="prob-input" placeholder="？" readonly>
+      <div class="prob-feedback" id="prob-feedback"></div>
+      <button class="prob-next-btn" id="prob-next-btn" onclick="submitAnswer()">答える</button>
+    </div>
+
+    <div class="numpad">
+      <button class="numpad-btn" onclick="padInput('7')">7</button>
+      <button class="numpad-btn" onclick="padInput('8')">8</button>
+      <button class="numpad-btn" onclick="padInput('9')">9</button>
+      <button class="numpad-btn" onclick="padInput('4')">4</button>
+      <button class="numpad-btn" onclick="padInput('5')">5</button>
+      <button class="numpad-btn" onclick="padInput('6')">6</button>
+      <button class="numpad-btn" onclick="padInput('1')">1</button>
+      <button class="numpad-btn" onclick="padInput('2')">2</button>
+      <button class="numpad-btn" onclick="padInput('3')">3</button>
+      <button class="numpad-btn" onclick="padInput('0')">0</button>
+      <button class="numpad-btn" style="grid-column: span 2;" onclick="padDelete()">⌫ 削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div id="screen-result" class="screen">
+  <div class="app-header">
+    <div><h1>結果</h1></div>
+  </div>
+
+  <div id="result-content"></div>
+
+  <div class="result-actions">
+    <button class="btn-retry" onclick="retryQuiz()">もう一度同じ設定で</button>
+    <button class="btn-back" onclick="backToSettings()">設定に戻る</button>
+  </div>
+</div>
+
+<script>
+// ========== STATE ==========
+let config = {};
+let questions = [];
+let answers = [];
+let currentQ = 0;
+let timerInterval = null;
+let elapsed = 0;
+let answered = false;
+let selectedLevels = [3];
+let operationRule = 'standard';
+
+// ========== SETTINGS INIT ==========
+
+// Genre toggles
+document.querySelectorAll('#genre-grid .genre-item:not(.v2-only)').forEach(item => {
+  item.addEventListener('click', function() {
+    const inp = this.querySelector('input');
+    if (inp.disabled) return;
+    inp.checked = !inp.checked;
+    this.classList.toggle('checked', inp.checked);
+    updateCompoundVisibility();
+    validateStart();
+  });
+});
+
+// Compound check rows
+['check-step2','check-step3'].forEach(id => {
+  const row = document.getElementById(id);
+  row.addEventListener('click', function() {
+    const inp = this.querySelector('input');
+    inp.checked = !inp.checked;
+    this.classList.toggle('checked', inp.checked);
+    // Ensure at least one is checked
+    if (!document.getElementById('check-step2').classList.contains('checked') &&
+        !document.getElementById('check-step3').classList.contains('checked')) {
+      document.getElementById('check-step2').classList.add('checked');
+      document.getElementById('check-step2').querySelector('input').checked = true;
+    }
+  });
+});
+
+function updateCompoundVisibility() {
+  const compoundChecked = document.querySelector('[data-genre="compound"]').classList.contains('checked');
+  document.getElementById('compound-settings').classList.toggle('visible', compoundChecked);
+  document.getElementById('compound-hint').style.display = compoundChecked ? 'none' : '';
+}
+
+function validateStart() {
+  const anyChecked = [...document.querySelectorAll('#genre-grid .genre-item:not(.v2-only)')].some(i => i.classList.contains('checked'));
+  document.getElementById('start-btn').disabled = !anyChecked;
+}
+
+function toggleLevel(lvl) {
+  if (lvl === 'rand') {
+    selectedLevels = [1,2,3,4];
+    document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-level="rand"]').classList.add('active');
+    return;
+  }
+  const idx = selectedLevels.indexOf(lvl);
+  if (idx >= 0) {
+    if (selectedLevels.length > 1) selectedLevels.splice(idx, 1);
+  } else {
+    selectedLevels.push(lvl);
+  }
+  selectedLevels = selectedLevels.filter(l => l !== 'rand');
+  if (selectedLevels.length === 0) selectedLevels = [lvl === 1 ? 1 : lvl - 1];
+  // sync UI
+  document.querySelectorAll('.level-btn').forEach(b => {
+    const l = b.dataset.level;
+    if (l === 'rand') { b.classList.remove('active'); return; }
+    b.classList.toggle('active', selectedLevels.includes(+l));
+  });
+}
+
+function setCount(v) {
+  document.querySelectorAll('.count-btn').forEach(b => b.classList.toggle('active', b.dataset.count == v));
+  document.getElementById('custom-count-row').classList.toggle('visible', v === 'custom');
+}
+
+document.getElementById('timer-toggle').addEventListener('change', function() {
+  document.getElementById('timer-label').textContent = this.checked ? '経過時間を表示する' : '表示しない';
+});
+
+// ========== PROBLEM GENERATION ==========
+
+function getRandLevel() {
+  return selectedLevels[Math.floor(Math.random() * selectedLevels.length)];
+}
+
+function getRandNum(level, position) {
+  switch (level) {
+    case 1: return Math.floor(Math.random() * 9) + 1;
+    case 2:
+      return position === 'big' ? Math.floor(Math.random() * 90) + 10 : Math.floor(Math.random() * 9) + 1;
+    case 3: return Math.floor(Math.random() * 90) + 10;
+    case 4:
+      return position === 'big' ? Math.floor(Math.random() * 900) + 100 : Math.floor(Math.random() * 90) + 10;
+    default: return Math.floor(Math.random() * 9) + 1;
+  }
+}
+
+function genAdd(level) {
+  let a, b;
+  if (level <= 1) { a = getRandNum(1); b = getRandNum(1); }
+  else if (level === 2) { a = getRandNum(2,'big'); b = getRandNum(1); }
+  else if (level === 3) { a = getRandNum(3); b = getRandNum(3); }
+  else { a = getRandNum(4,'big'); b = getRandNum(3); }
+  return { q: `${a} + ${b} = □`, answer: a + b };
+}
+
+function genSub(level) {
+  let a, b;
+  if (level <= 1) { a = getRandNum(1); b = getRandNum(1); }
+  else if (level === 2) { a = getRandNum(2,'big'); b = getRandNum(1); }
+  else if (level === 3) { a = getRandNum(3); b = getRandNum(3); }
+  else { a = getRandNum(4,'big'); b = getRandNum(3); }
+  if (a < b) { let t = a; a = b; b = t; }
+  return { q: `${a} − ${b} = □`, answer: a - b };
+}
+
+function genMul(level) {
+  let a, b;
+  if (level <= 2) { a = Math.floor(Math.random()*9)+1; b = Math.floor(Math.random()*9)+1; }
+  else if (level === 3) { a = Math.floor(Math.random()*9)+1; b = Math.floor(Math.random()*12)+1; }
+  else { a = Math.floor(Math.random()*12)+1; b = Math.floor(Math.random()*12)+1; }
+  return { q: `${a} × ${b} = □`, answer: a * b };
+}
+
+function genDiv(level) {
+  let divisor, quotient;
+  if (level <= 2) { divisor = Math.floor(Math.random()*8)+2; quotient = Math.floor(Math.random()*9)+1; }
+  else if (level === 3) { divisor = Math.floor(Math.random()*8)+2; quotient = Math.floor(Math.random()*12)+1; }
+  else { divisor = Math.floor(Math.random()*11)+2; quotient = Math.floor(Math.random()*15)+1; }
+  const dividend = divisor * quotient;
+  return { q: `${dividend} ÷ ${divisor} = □`, answer: quotient };
+}
+
+function evalExpr(parts, nums) {
+  if (operationRule === 'left') {
+    let res = nums[0];
+    for (let i = 0; i < parts.length; i++) {
+      const op = parts[i], n = nums[i+1];
+      if (op === '+') res += n;
+      else if (op === '-') res -= n;
+      else if (op === '*') res *= n;
+      else if (op === '/') res /= n;
+    }
+    return res;
+  } else {
+    // standard precedence
+    let ns = [...nums], ps = [...parts];
+    // first pass: * /
+    for (let i = 0; i < ps.length; ) {
+      if (ps[i] === '*' || ps[i] === '/') {
+        const res = ps[i] === '*' ? ns[i]*ns[i+1] : ns[i]/ns[i+1];
+        ns.splice(i, 2, res);
+        ps.splice(i, 1);
+      } else { i++; }
+    }
+    let res = ns[0];
+    for (let i = 0; i < ps.length; i++) {
+      res = ps[i] === '+' ? res + ns[i+1] : res - ns[i+1];
+    }
+    return res;
+  }
+}
+
+const opSymbols = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+
+function genCompound(level) {
+  const use3 = document.getElementById('check-step3').classList.contains('checked');
+  const use2 = document.getElementById('check-step2').classList.contains('checked');
+  const steps = (use2 && use3) ? (Math.random()<0.5 ? 2 : 3) : (use3 ? 3 : 2);
+  const ops = ['+', '-', '*', '/'];
+
+  let nums, parts, answer;
+  let tries = 0;
+  do {
+    parts = [];
+    nums = [];
+    for (let i = 0; i <= steps-1; i++) {
+      const op = ops[Math.floor(Math.random()*ops.length)];
+      parts.push(op);
+    }
+    nums.push(getRandNum(Math.min(level, 3)));
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] === '/') {
+        // ensure divisibility
+        const divisor = Math.floor(Math.random()*8)+2;
+        nums.push(divisor);
+        // adjust previous accumulation — simpler: just pick small nums
+      } else {
+        nums.push(getRandNum(Math.min(level, 2)));
+      }
+    }
+    // Fix division: recalculate so it divides cleanly
+    // Use a different approach: evaluate progressively
+    // Rebuild to ensure no division issues
+    let valid = true;
+    // Check all subexpressions for div
+    let curr = nums[0];
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] === '/') {
+        const d = nums[i+1];
+        if (d === 0) { valid = false; break; }
+        // Make curr divisible by d
+        const multipleOfD = Math.ceil(Math.abs(curr)/d)*d;
+        nums[i] = curr >= 0 ? multipleOfD : -multipleOfD;
+        if (operationRule === 'left') curr = nums[i] / d;
+        else {
+          // don't adjust — standard mode handles precedence differently; just skip invalid
+          if (curr % d !== 0) { valid = false; break; }
+          curr = curr / d;
+        }
+      } else if (parts[i] === '+') { curr += nums[i+1]; }
+      else if (parts[i] === '-') { curr -= nums[i+1]; }
+      else if (parts[i] === '*') { curr *= nums[i+1]; }
+    }
+    answer = evalExpr(parts, nums);
+    if (!Number.isInteger(answer) || answer < -999 || answer > 9999) valid = false;
+    if (!valid) { tries++; continue; }
+    break;
+  } while (tries < 30);
+
+  if (tries >= 30) return genAdd(level); // fallback
+
+  let qStr = nums[0].toString();
+  for (let i = 0; i < parts.length; i++) {
+    qStr += ` ${opSymbols[parts[i]]} ${nums[i+1]}`;
+  }
+  qStr += ' = □';
+  return { q: qStr, answer };
+}
+
+function genBlank(level) {
+  const lv = getRandLevel();
+  const types = ['add','sub','mul','div'];
+  const type = types[Math.floor(Math.random()*types.length)];
+  let a, b, answer, q;
+
+  if (type === 'add') {
+    const r = genAdd(lv);
+    const parts = r.q.replace(' = □','').split(' + ');
+    a = parseInt(parts[0]); b = parseInt(parts[1]);
+    if (Math.random() < 0.5) { q = `□ + ${b} = ${a+b}`; answer = a; }
+    else { q = `${a} + □ = ${a+b}`; answer = b; }
+  } else if (type === 'sub') {
+    const r = genSub(lv);
+    const raw = r.q.replace(' = □','');
+    const pts = raw.split(' − ');
+    a = parseInt(pts[0]); b = parseInt(pts[1]);
+    const rnd = Math.random();
+    if (rnd < 0.33) { q = `□ − ${b} = ${a-b}`; answer = a; }
+    else if (rnd < 0.67) { q = `${a} − □ = ${a-b}`; answer = b; }
+    else { q = `□ − ${a-b} = ${b}`; answer = a; }
+  } else if (type === 'mul') {
+    const r = genMul(lv);
+    const raw = r.q.replace(' = □','');
+    const pts = raw.split(' × ');
+    a = parseInt(pts[0]); b = parseInt(pts[1]);
+    if (Math.random() < 0.5) { q = `□ × ${b} = ${a*b}`; answer = a; }
+    else { q = `${a} × □ = ${a*b}`; answer = b; }
+  } else {
+    const r = genDiv(lv);
+    const raw = r.q.replace(' = □','');
+    const pts = raw.split(' ÷ ');
+    a = parseInt(pts[0]); b = parseInt(pts[1]);
+    q = `${a} ÷ □ = ${r.answer}`; answer = b;
+  }
+  return { q, answer };
+}
+
+function generateQuestion(genres, level) {
+  const lv = (selectedLevels.includes('rand') || selectedLevels.length > 1)
+    ? selectedLevels[Math.floor(Math.random()*selectedLevels.length)]
+    : selectedLevels[0];
+
+  const genre = genres[Math.floor(Math.random() * genres.length)];
+  switch (genre) {
+    case 'add': return genAdd(lv);
+    case 'sub': return genSub(lv);
+    case 'mul': return genMul(lv);
+    case 'div': return genDiv(lv);
+    case 'compound': return genCompound(lv);
+    case 'blank': return genBlank(lv);
+    default: return genAdd(lv);
+  }
+}
+
+// ========== QUIZ FLOW ==========
+
+function getSelectedGenres() {
+  return [...document.querySelectorAll('#genre-grid .genre-item.checked')]
+    .map(i => i.dataset.genre);
+}
+
+function getCount() {
+  const active = document.querySelector('.count-btn.active');
+  if (!active) return 10;
+  if (active.dataset.count === 'custom') {
+    const v = parseInt(document.getElementById('custom-count-val').value);
+    return isNaN(v) || v < 1 ? 10 : Math.min(v, 200);
+  }
+  return parseInt(active.dataset.count);
+}
+
+function startQuiz() {
+  const genres = getSelectedGenres();
+  if (genres.length === 0) return;
+  const count = getCount();
+  const useTimer = document.getElementById('timer-toggle').checked;
+
+  questions = [];
+  for (let i = 0; i < count; i++) {
+    questions.push(generateQuestion(genres, selectedLevels[0]));
+  }
+  answers = [];
+  currentQ = 0;
+  elapsed = 0;
+
+  config = { count, useTimer, genres };
+
+  showScreen('problem');
+  document.getElementById('prob-total').textContent = count;
+  document.getElementById('prob-timer').style.display = useTimer ? '' : 'none';
+
+  if (useTimer) {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      elapsed++;
+      const m = String(Math.floor(elapsed/60)).padStart(2,'0');
+      const s = String(elapsed%60).padStart(2,'0');
+      document.getElementById('prob-timer').textContent = `${m}:${s}`;
+    }, 1000);
+  }
+
+  loadQuestion();
+}
+
+function loadQuestion() {
+  answered = false;
+  const q = questions[currentQ];
+  document.getElementById('prob-question').textContent = q.q;
+  document.getElementById('prob-input').value = '';
+  document.getElementById('prob-feedback').textContent = '';
+  document.getElementById('prob-feedback').className = 'prob-feedback';
+  document.getElementById('prob-current').textContent = currentQ + 1;
+  document.getElementById('prob-fill').style.width = (currentQ / questions.length * 100) + '%';
+  document.getElementById('prob-next-btn').textContent = '答える';
+  document.getElementById('prob-next-btn').classList.remove('next-mode');
+}
+
+function padInput(v) {
+  const inp = document.getElementById('prob-input');
+  if (answered) return;
+  if (inp.value.length >= 5) return;
+  inp.value += v;
+}
+
+function padDelete() {
+  if (answered) return;
+  const inp = document.getElementById('prob-input');
+  inp.value = inp.value.slice(0, -1);
+}
+
+function submitAnswer() {
+  if (answered) {
+    nextQuestion();
+    return;
+  }
+  const val = document.getElementById('prob-input').value.trim();
+  if (val === '' || val === '-') return;
+  const userAns = parseInt(val);
+  if (isNaN(userAns) || userAns < 0) {
+    document.getElementById('prob-input').value = '';
+    return;
+  }
+  const correct = questions[currentQ].answer;
+  const isCorrect = userAns === correct;
+
+  answers.push({ q: questions[currentQ].q, userAns, correct, isCorrect });
+  answered = true;
+
+  const fb = document.getElementById('prob-feedback');
+  const btn = document.getElementById('prob-next-btn');
+  if (isCorrect) {
+    fb.textContent = '⭕️  正解！';
+    fb.className = 'prob-feedback correct';
+  } else {
+    fb.textContent = `✕  不正解　正解：${correct}`;
+    fb.className = 'prob-feedback wrong';
+  }
+  const isLast = currentQ >= questions.length - 1;
+  btn.textContent = isLast ? '結果を見る' : '次の問題';
+  btn.classList.add('next-mode');
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= questions.length) {
+    finishQuiz();
+  } else {
+    loadQuestion();
+  }
+}
+
+document.getElementById('prob-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    if (!answered) submitAnswer();
+    else nextQuestion();
+  }
+});
+
+function finishQuiz() {
+  clearInterval(timerInterval);
+  showScreen('result');
+  renderResult();
+  saveHistory();
+}
+
+// ========== RESULT ==========
+
+function renderResult() {
+  const correct = answers.filter(a => a.isCorrect).length;
+  const total = answers.length;
+  const rate = Math.round(correct / total * 100);
+  const m = String(Math.floor(elapsed/60)).padStart(2,'0');
+  const s = String(elapsed%60).padStart(2,'0');
+
+  let mistakesHtml = '';
+  const mistakes = answers.filter(a => !a.isCorrect);
+  if (mistakes.length > 0) {
+    mistakesHtml = `
+      <div class="mistakes-section">
+        <div class="mistakes-header">間違えた問題（${mistakes.length}問）</div>
+        ${mistakes.map(m => `
+          <div class="mistake-row">
+            <div class="mistake-q">${m.q.replace('□','？')}</div>
+            <div class="mistake-user">${m.userAns}</div>
+            <div class="mistake-correct">正解：${m.correct}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  const rateColor = rate >= 80 ? 'var(--success)' : rate >= 60 ? 'var(--warning)' : 'var(--danger)';
+
+  document.getElementById('result-content').innerHTML = `
+    <div class="result-summary">
+      <div class="result-score" style="color:${rateColor}">${rate}%</div>
+      <div class="result-label">${total}問中 ${correct}問 正解</div>
+      ${config.useTimer ? `<div class="result-stats">
+        <div class="result-stat">
+          <div class="result-stat-val">${m}:${s}</div>
+          <div class="result-stat-lbl">所要時間</div>
+        </div>
+        <div class="result-stat">
+          <div class="result-stat-val">${total > 0 ? Math.round(elapsed/total*10)/10 : '-'}秒</div>
+          <div class="result-stat-lbl">1問あたり</div>
+        </div>
+      </div>` : ''}
+    </div>
+    ${mistakesHtml}
+  `;
+}
+
+function retryQuiz() {
+  startQuiz();
+}
+
+function quitQuiz() {
+  if (!confirm('訓練を中断して設定画面に戻りますか？')) return;
+  clearInterval(timerInterval);
+  showScreen('settings');
+  renderHistory();
+}
+
+function backToSettings() {
+  showScreen('settings');
+  renderHistory();
+}
+
+// ========== HISTORY ==========
+
+function saveHistory() {
+  const correct = answers.filter(a => a.isCorrect).length;
+  const total = answers.length;
+  const rate = Math.round(correct / total * 100);
+  const m = String(Math.floor(elapsed/60)).padStart(2,'0');
+  const s = String(elapsed%60).padStart(2,'0');
+
+  const genreNames = { add:'足し算', sub:'引き算', mul:'掛け算', div:'割り算', compound:'複合計算', blank:'虫食い' };
+  const genreLabel = config.genres.map(g => genreNames[g] || g).join('・');
+
+  const now = new Date();
+  const dateStr = `${now.getMonth()+1}/${now.getDate()}`;
+
+  const entry = {
+    date: dateStr,
+    genre: genreLabel,
+    count: total,
+    rate,
+    time: `${m}:${s}`
+  };
+
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem('keisan_history') || '[]'); } catch(e){}
+  history.unshift(entry);
+  if (history.length > 10) history = history.slice(0, 10);
+  try { localStorage.setItem('keisan_history', JSON.stringify(history)); } catch(e){}
+}
+
+function renderHistory() {
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem('keisan_history') || '[]'); } catch(e){}
+
+  const el = document.getElementById('history-list');
+  if (history.length === 0) {
+    el.innerHTML = '<div class="no-history">まだ記録がありません</div>';
+    return;
+  }
+
+  el.innerHTML = history.map(h => `
+    <div class="history-item">
+      <div class="history-date">${h.date}</div>
+      <div class="history-genre">${h.genre}</div>
+      <div class="history-detail">Lv: ${h.count}問 / ${h.time}</div>
+      <div class="history-rate" style="color:${h.rate>=80?'var(--success)':h.rate>=60?'var(--warning)':'var(--danger)'}">${h.rate}%</div>
+    </div>
+  `).join('');
+}
+
+function clearHistory() {
+  if (confirm('履歴をすべて削除しますか？')) {
+    try { localStorage.removeItem('keisan_history'); } catch(e){}
+    renderHistory();
+  }
+}
+
+// ========== SCREEN SWITCH ==========
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.body.style.overflow = name === 'problem' ? 'hidden' : '';
+}
+
+// ========== INIT ==========
+renderHistory();
+</script>
+</body>
+</html>
