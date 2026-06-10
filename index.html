@@ -508,17 +508,17 @@
   .numpad {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: 12px;
     width: 100%;
-    max-width: 400px;
+    max-width: 480px;
   }
 
   .numpad-btn {
-    padding: 22px 10px;
-    font-size: 28px;
+    padding: 28px 10px;
+    font-size: 34px;
     font-weight: 700;
     border: 2px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius);
     background: var(--surface);
     color: var(--text);
     cursor: pointer;
@@ -526,17 +526,30 @@
     transition: background 0.1s;
     user-select: none;
     touch-action: manipulation;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+    min-height: 80px;
   }
 
-  .numpad-btn:active { background: #c8e0f8; border-color: var(--accent); }
+  .numpad-btn:active { background: #c8e0f8; border-color: var(--accent); transform: scale(0.96); }
   .numpad-btn.del {
     color: var(--danger);
-    font-size: 22px;
+    font-size: 26px;
     background: #fff5f5;
     border-color: #f0c0c0;
   }
   .numpad-btn.del:active { background: #fcd8d8; }
+  .numpad-btn.minus-btn {
+    font-size: 30px;
+    background: #f5f0ff;
+    border-color: #c8a8f0;
+    color: #6a1abf;
+  }
+  .numpad-btn.minus-btn:active { background: #e0d0ff; }
+  .numpad-btn.minus-btn.minus-active {
+    background: #6a1abf;
+    color: white;
+    border-color: #6a1abf;
+  }
 
   /* ===== RESULT SCREEN ===== */
   #screen-result {
@@ -732,6 +745,18 @@
   }
 
   .no-history { padding: 20px; text-align: center; font-size: 14px; color: var(--text-hint); }
+
+  /* マイナス表示バッジ */
+  .minus-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #f0e8ff;
+    color: #6a1abf;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-left: 6px;
+  }
 </style>
 </head>
 <body>
@@ -876,10 +901,26 @@
       </div>
     </div>
 
-    <!-- 5. 複合計算設定 -->
+    <!-- 5. マイナス設定 -->
     <div class="section-card">
       <div class="section-title">
         <span class="num">5</span>
+        答えがマイナスになる問題
+      </div>
+      <div style="font-size:13px; color:var(--text-sub); margin-bottom:12px;">引き算・複合計算で大きい数から小さい数を引くとき、答えがマイナス（負の数）になる場合があります</div>
+      <div class="toggle-row">
+        <label class="toggle-switch">
+          <input type="checkbox" id="negative-toggle">
+          <div class="toggle-track"><div class="toggle-thumb"></div></div>
+        </label>
+        <span class="toggle-label" id="negative-label">出さない（答えは0以上）</span>
+      </div>
+    </div>
+
+    <!-- 6. 複合計算設定 -->
+    <div class="section-card">
+      <div class="section-title">
+        <span class="num">6</span>
         複合計算の設定
       </div>
 
@@ -954,8 +995,9 @@
       <button class="numpad-btn" onclick="padInput('1')">1</button>
       <button class="numpad-btn" onclick="padInput('2')">2</button>
       <button class="numpad-btn" onclick="padInput('3')">3</button>
+      <button class="numpad-btn minus-btn" id="minus-btn" onclick="toggleMinus()">± 負</button>
       <button class="numpad-btn" onclick="padInput('0')">0</button>
-      <button class="numpad-btn" style="grid-column: span 2;" onclick="padDelete()">⌫ 削除</button>
+      <button class="numpad-btn del" onclick="padDelete()">⌫</button>
     </div>
   </div>
 </div>
@@ -1059,6 +1101,26 @@ document.getElementById('timer-toggle').addEventListener('change', function() {
   document.getElementById('timer-label').textContent = this.checked ? '経過時間を表示する' : '表示しない';
 });
 
+document.getElementById('negative-toggle').addEventListener('change', function() {
+  document.getElementById('negative-label').textContent = this.checked ? '出す（答えがマイナスになることがある）' : '出さない（答えは0以上）';
+  const minusBtn = document.getElementById('minus-btn');
+  minusBtn.style.display = this.checked ? '' : 'none';
+});
+
+// マイナスボタンのトグル
+function toggleMinus() {
+  if (answered) return;
+  const inp = document.getElementById('prob-input');
+  const btn = document.getElementById('minus-btn');
+  if (inp.value.startsWith('-')) {
+    inp.value = inp.value.slice(1);
+    btn.classList.remove('minus-active');
+  } else {
+    inp.value = '-' + inp.value;
+    btn.classList.add('minus-active');
+  }
+}
+
 // ========== PROBLEM GENERATION ==========
 
 function getRandLevel() {
@@ -1092,7 +1154,8 @@ function genSub(level) {
   else if (level === 2) { a = getRandNum(2,'big'); b = getRandNum(1); }
   else if (level === 3) { a = getRandNum(3); b = getRandNum(3); }
   else { a = getRandNum(4,'big'); b = getRandNum(3); }
-  if (a < b) { let t = a; a = b; b = t; }
+  const allowNeg = document.getElementById('negative-toggle').checked;
+  if (!allowNeg && a < b) { let t = a; a = b; b = t; }
   return { q: `${a} − ${b} = □`, answer: a - b };
 }
 
@@ -1195,7 +1258,8 @@ function genCompound(level) {
       else if (parts[i] === '*') { curr *= nums[i+1]; }
     }
     answer = evalExpr(parts, nums);
-    if (!Number.isInteger(answer) || answer < -999 || answer > 9999) valid = false;
+    const allowNeg = document.getElementById('negative-toggle').checked;
+    if (!Number.isInteger(answer) || answer < (allowNeg ? -999 : 0) || answer > 9999) valid = false;
     if (!valid) { tries++; continue; }
     break;
   } while (tries < 30);
@@ -1326,19 +1390,30 @@ function loadQuestion() {
   document.getElementById('prob-fill').style.width = (currentQ / questions.length * 100) + '%';
   document.getElementById('prob-next-btn').textContent = '答える';
   document.getElementById('prob-next-btn').classList.remove('next-mode');
+  document.getElementById('minus-btn').classList.remove('minus-active');
 }
 
 function padInput(v) {
   const inp = document.getElementById('prob-input');
   if (answered) return;
-  if (inp.value.length >= 5) return;
-  inp.value += v;
+  const isNeg = inp.value.startsWith('-');
+  const digits = inp.value.replace('-','');
+  if (digits.length >= 5) return;
+  inp.value = (isNeg ? '-' : '') + digits + v;
 }
 
 function padDelete() {
   if (answered) return;
   const inp = document.getElementById('prob-input');
   inp.value = inp.value.slice(0, -1);
+  // 数字が消えてマイナス記号だけ残ったら消す
+  if (inp.value === '-') {
+    inp.value = '';
+    document.getElementById('minus-btn').classList.remove('minus-active');
+  }
+  if (!inp.value.startsWith('-')) {
+    document.getElementById('minus-btn').classList.remove('minus-active');
+  }
 }
 
 function submitAnswer() {
@@ -1349,7 +1424,7 @@ function submitAnswer() {
   const val = document.getElementById('prob-input').value.trim();
   if (val === '' || val === '-') return;
   const userAns = parseInt(val);
-  if (isNaN(userAns) || userAns < 0) {
+  if (isNaN(userAns)) {
     document.getElementById('prob-input').value = '';
     return;
   }
@@ -1524,6 +1599,8 @@ function showScreen(name) {
 }
 
 // ========== INIT ==========
+// 初期状態：マイナストグルOFFなので「負」ボタン非表示
+document.getElementById('minus-btn').style.display = 'none';
 renderHistory();
 </script>
 </body>
