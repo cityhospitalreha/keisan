@@ -1,0 +1,25 @@
+{
+  "name": "計算訓練アプリ",
+  "short_name": "計算訓練",
+  "description": "計算訓練・リハビリ支援アプリ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8f7f4",
+  "theme_color": "#185fa5",
+  "orientation": "portrait",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
